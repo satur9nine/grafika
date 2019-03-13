@@ -19,6 +19,7 @@ package com.android.grafika;
 import android.annotation.TargetApi;
 import android.app.ActivityOptions;
 import android.hardware.display.DisplayManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.app.ListActivity;
 import android.content.Intent;
@@ -182,23 +183,30 @@ public class MainActivity extends ListActivity {
     protected void onListItemClick(ListView listView, View view, int position, long id) {
         Map<String, Object> map = (Map<String, Object>)listView.getItemAtPosition(position);
         Intent intent = (Intent) map.get(CLASS_NAME);
-        //startActivity(intent);
-        aospStartSecondary(intent);
+        startActivityForItem(intent);
+    }
+
+    private void startActivityForItem(Intent intent) {
+        DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
+        Display[] displays = displayManager.getDisplays();
+
+        if (displays.length > 1 && Build.VERSION.SDK_INT >= 26) {
+            secondaryDisplayLaunch(intent, displays[1]);
+        } else {
+            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
     }
 
     @TargetApi(26)
-    private void aospStartSecondary(Intent intent) {
-        DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
-        for (Display d: displayManager.getDisplays()) {
-            Log.i(TAG, "Found display: " + d);
-            if (d.getDisplayId() == Display.DEFAULT_DISPLAY) {
-                continue;
-            }
-            ActivityOptions options = ActivityOptions.makeBasic();
-            options.setLaunchDisplayId(d.getDisplayId());
-            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent, options.toBundle());
-        }
+    private void secondaryDisplayLaunch(Intent intent, Display display) {
+        Display d = display;
+        Log.i(TAG, "Launching on display: " + d);
+
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(d.getDisplayId());
+        intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent, options.toBundle());
     }
 
     @Override
