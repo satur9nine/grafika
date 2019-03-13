@@ -16,10 +16,14 @@
 
 package com.android.grafika;
 
+import android.annotation.TargetApi;
+import android.app.ActivityOptions;
+import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -178,7 +182,23 @@ public class MainActivity extends ListActivity {
     protected void onListItemClick(ListView listView, View view, int position, long id) {
         Map<String, Object> map = (Map<String, Object>)listView.getItemAtPosition(position);
         Intent intent = (Intent) map.get(CLASS_NAME);
-        startActivity(intent);
+        //startActivity(intent);
+        aospStartSecondary(intent);
+    }
+
+    @TargetApi(26)
+    private void aospStartSecondary(Intent intent) {
+        DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
+        for (Display d: displayManager.getDisplays()) {
+            Log.i(TAG, "Found display: " + d);
+            if (d.getDisplayId() == Display.DEFAULT_DISPLAY) {
+                continue;
+            }
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(d.getDisplayId());
+            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent, options.toBundle());
+        }
     }
 
     @Override
