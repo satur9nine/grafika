@@ -18,6 +18,7 @@ package com.android.grafika;
 
 import android.annotation.TargetApi;
 import android.app.ActivityOptions;
+import android.graphics.Point;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -72,6 +73,9 @@ public class MainActivity extends ListActivity {
         { "Multi-surface test",
             "Three overlapping SurfaceViews, one secure",
             "MultiSurfaceActivity" },
+        { "Clover status bar clone",
+            "Add a view via WindowManager similar to how status bar works",
+            "StatusBarCloneActivity" },
         { "Play video (SurfaceView)",
             "Plays .mp4 videos created by Grafika",
             "PlayMovieSurfaceActivity" },
@@ -189,13 +193,31 @@ public class MainActivity extends ListActivity {
     private void startActivityForItem(Intent intent) {
         DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
         Display[] displays = displayManager.getDisplays();
+        Display preferredDisplay = displays[0];
 
-        if (displays.length > 1 && Build.VERSION.SDK_INT >= 26) {
-            secondaryDisplayLaunch(intent, displays[1]);
-        } else {
-            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+        // Prefer largest display
+        int maxWidth = 0;
+        for (Display d : displays) {
+            Point p = new Point();
+            d.getSize(p);
+            if (p.x > maxWidth) {
+                maxWidth = p.x;
+                preferredDisplay = d;
+            }
         }
+
+        if (preferredDisplay == displays[0]) {
+            primaryDisplayLaunch(intent);
+        } else {
+            secondaryDisplayLaunch(intent, preferredDisplay);
+        }
+    }
+
+    private void primaryDisplayLaunch(Intent intent) {
+        Log.i(TAG, "Launching on primary display");
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     @TargetApi(26)
